@@ -48,7 +48,6 @@ class _AdminLandlordScreenState extends State<AdminLandlordScreen> {
     final _phoneController = TextEditingController();
     final _emailController = TextEditingController();
     final _addressController = TextEditingController();
-    final _passwordController = TextEditingController();
 
     showDialog(
       context: context,
@@ -91,14 +90,6 @@ class _AdminLandlordScreenState extends State<AdminLandlordScreen> {
                   ),
                 ),
                 SizedBox(height: 10),
-                TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                ),
               ],
             ),
           ),
@@ -118,7 +109,6 @@ class _AdminLandlordScreenState extends State<AdminLandlordScreen> {
                   email: _emailController.text,
                   phoneNumber: _phoneController.text,
                   address: _addressController.text,
-                  password: _passwordController.text,
                 );
                 try {
                   await _landlordService.createLandlord(newLandlord);
@@ -191,8 +181,45 @@ class _AdminLandlordScreenState extends State<AdminLandlordScreen> {
                 SizedBox(height: 10),
                 Text('Address: ${landlord.address}'),
                 SizedBox(height: 10),
-                Text('Password: ${landlord.password}'), // Handle password display securely
               ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // New method to show properties
+  void _showPropertiesDialog(Landlord landlord) {
+    // Dummy data for properties
+    final List<String> properties = [
+      'Property 1 - 2 Bedroom Apartment',
+      'Property 2 - 3 Bedroom House',
+      'Property 3 - Studio Apartment',
+      'Property 4 - 1 Bedroom Condo',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('${landlord.name}\'s Properties'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: properties.map((property) {
+                return ListTile(
+                  title: Text(property),
+                );
+              }).toList(),
             ),
           ),
           actions: [
@@ -298,7 +325,7 @@ class _AdminLandlordScreenState extends State<AdminLandlordScreen> {
                               children: [
                                 ElevatedButton(
                                   onPressed: () {
-                                    // Navigate to properties page
+                                    _showPropertiesDialog(landlord);
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.orange,

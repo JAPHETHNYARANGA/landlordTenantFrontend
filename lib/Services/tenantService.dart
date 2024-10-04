@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-
 class TenantService {
   final String baseUrl;
 
@@ -32,17 +31,20 @@ class TenantService {
           'email': tenant.email,
           'phone_number': tenant.phoneNumber,
           'address': tenant.address,
-          'password': tenant.password,
+          'house_no': tenant.houseNo,
+          'property_id': tenant.propertyId,
         }),
       );
 
       if (response.statusCode != 201) {
+        print('Response body: ${response.body}'); // Log the response body for debugging
         throw Exception('Failed to create tenant');
       }
     } catch (e) {
       throw Exception(e.toString());
     }
   }
+
 
   Future<void> updateTenant(int id, Tenant tenant) async {
     try {
@@ -54,6 +56,8 @@ class TenantService {
           'email': tenant.email,
           'phone_number': tenant.phoneNumber,
           'address': tenant.address,
+          'house_no': tenant.houseNo, // Include house_no
+          'property_id': tenant.propertyId, // Include property_id
         }),
       );
 
@@ -78,14 +82,14 @@ class TenantService {
   }
 }
 
-
 class Tenant {
   final int id;
   final String name;
   final String email;
   final String phoneNumber;
   final String address;
-  final String? password;
+  final String houseNo; // New field for house number
+  final int propertyId; // New field for property ID
 
   Tenant({
     required this.id,
@@ -93,7 +97,8 @@ class Tenant {
     required this.email,
     required this.phoneNumber,
     required this.address,
-    this.password,
+    required this.houseNo, // Add houseNo to constructor
+    required this.propertyId, // Add propertyId to constructor
   });
 
   factory Tenant.fromJson(Map<String, dynamic> json) {
@@ -103,7 +108,8 @@ class Tenant {
       email: json['email'],
       phoneNumber: json['phone_number'],
       address: json['address'],
-      password: json['password'],  // Optional password field
+      houseNo: json['house_no'], // Parse house_no from JSON
+      propertyId: json['property_id'], // Parse property_id from JSON
     );
   }
 
@@ -114,8 +120,8 @@ class Tenant {
       'email': email,
       'phone_number': phoneNumber,
       'address': address,
-      'password': password,
+      'house_no': houseNo, // Include house_no in JSON output
+      'property_id': propertyId, // Include property_id in JSON output
     };
   }
 }
-

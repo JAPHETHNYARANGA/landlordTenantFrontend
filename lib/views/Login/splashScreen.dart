@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:landlord_tenant/views/Login/explore.dart';
+import 'package:landlord_tenant/sharedPreferences/adminSharedPreference.dart';
+import 'package:landlord_tenant/views/Home/Admin/adminHome.dart';
+import 'package:landlord_tenant/views/Home/Admin/adminLandlord.dart';
+import 'package:landlord_tenant/views/Home/Admin/adminTenant.dart';
+import 'package:landlord_tenant/views/Home/Tenant/tenantHome.dart';
 import 'loginScreen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -11,16 +15,63 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToExplore();
+    _navigateToHome();
   }
 
-  _navigateToExplore() async {
-    await Future.delayed(Duration(seconds: 3), () {});
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => ExploreScreen()),
-    );
+  _navigateToHome() async {
+    // Delay for 3 seconds
+    await Future.delayed(Duration(seconds: 3));
+
+    // Check if the widget is still mounted
+    if (!mounted) return;
+
+    // Get stored user type and token
+    String? token;
+    String? userType;
+
+    try {
+      token = await SharedPreferencesManager.getString('token');
+      userType = await SharedPreferencesManager.getString('userType');
+    } catch (e) {
+      print("Error retrieving shared preferences: $e");
+    }
+
+    print("Token: $token");
+    print("User Type: $userType");
+
+    // Navigate based on the user type
+    if (token == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    } else {
+      // Navigate based on userType
+      if (userType == 'admin' || userType == 'superAdmin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AdminHomeScreen()),
+        );
+      } else if (userType == 'tenant') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => TenantHome()),
+        );
+      } else if (userType == 'landlord') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AdminLandlordScreen()),
+        );
+      } else {
+        // Default to login if userType is unrecognized
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      }
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
         children: [
           // Background Image or Color
           Container(
-            color: Colors.white, // Use a white background
+            color: Colors.white,
           ),
           // Main Content
           Center(
@@ -38,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen> {
               children: [
                 // Logo Image
                 Image.asset(
-                  'assets/images/logo.jpeg', // Replace with your actual logo asset path
+                  'assets/images/logo.jpeg',
                   width: 150,
                   height: 150,
                 ),
@@ -49,7 +100,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.orange, // Customize the color
+                    color: Colors.orange,
                   ),
                 ),
                 // Tagline
@@ -70,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen> {
             left: 0,
             right: 0,
             child: Image.asset(
-              'assets/images/city_img.png', // Replace with your actual skyline asset path
+              'assets/images/city_img.png',
               fit: BoxFit.cover,
               height: 100,
             ),

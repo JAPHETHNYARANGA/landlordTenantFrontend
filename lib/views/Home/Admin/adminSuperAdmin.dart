@@ -48,7 +48,6 @@ class _AdminSuperAdminScreenState extends State<AdminSuperAdminScreen> {
     final _phoneController = TextEditingController();
     final _emailController = TextEditingController();
     final _addressController = TextEditingController();
-    final _passwordController = TextEditingController();
 
     showDialog(
       context: context,
@@ -90,15 +89,6 @@ class _AdminSuperAdminScreenState extends State<AdminSuperAdminScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                SizedBox(height: 10),
-                TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                ),
               ],
             ),
           ),
@@ -118,7 +108,6 @@ class _AdminSuperAdminScreenState extends State<AdminSuperAdminScreen> {
                   email: _emailController.text,
                   phoneNumber: _phoneController.text,
                   address: _addressController.text,
-                  password: _passwordController.text,
                 );
                 try {
                   await _adminService.createAdmin(newAdmin);
@@ -190,8 +179,6 @@ class _AdminSuperAdminScreenState extends State<AdminSuperAdminScreen> {
                 Text('Phone: ${admin.phoneNumber}'),
                 SizedBox(height: 10),
                 Text('Address: ${admin.address}'),
-                SizedBox(height: 10),
-                Text('Password: ${admin.password}'), // Handle password display securely
               ],
             ),
           ),
@@ -276,55 +263,46 @@ class _AdminSuperAdminScreenState extends State<AdminSuperAdminScreen> {
                       elevation: 2,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                CircleAvatar(
-                                  radius: 24,
-                                  backgroundColor: Colors.grey[300],
-                                  child: Icon(Icons.person, size: 30),
-                                ),
-                                Expanded(
-                                  child: Text(landlord.name),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    // Navigate to properties page
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: Colors.grey[300],
+                                    child: Icon(Icons.person, size: 30),
                                   ),
-                                  child: Text('Properties', style: TextStyle(fontSize: 14)),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(landlord.name, style: TextStyle(fontWeight: FontWeight.bold)),
+                                        SizedBox(height: 4),
+                                        Text(landlord.email, overflow: TextOverflow.ellipsis),
+                                        Text(landlord.phoneNumber, overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    _showLandlordDetailsDialog(landlord);
+                                  },
+                                  child: Text('Details', style: TextStyle(fontSize: 14)),
                                 ),
-                                Row(
-                                  children: [
-                                    TextButton(
-                                      onPressed: () {
-                                        _showLandlordDetailsDialog(landlord);
-                                      },
-                                      child: Text('Details', style: TextStyle(fontSize: 14)),
-                                    ),
-                                    SizedBox(width: 8),
-                                    IconButton(
-                                      icon: Icon(Icons.delete, size: 24),
-                                      onPressed: () {
-                                        _showDeleteConfirmationDialog(landlord.id);
-                                      },
-                                    ),
-                                  ],
+                                SizedBox(width: 8),
+                                IconButton(
+                                  icon: Icon(Icons.delete, size: 24),
+                                  onPressed: () {
+                                    _showDeleteConfirmationDialog(landlord.id);
+                                  },
                                 ),
                               ],
                             ),

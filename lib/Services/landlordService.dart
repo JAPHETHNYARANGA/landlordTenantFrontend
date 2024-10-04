@@ -52,7 +52,7 @@ class Landlord {
   final String email;
   final String phoneNumber;
   final String address;
-  final String password;
+
 
   Landlord({
     required this.id,
@@ -60,7 +60,7 @@ class Landlord {
     required this.email,
     required this.phoneNumber,
     required this.address,
-    required this.password,
+
   });
 
   factory Landlord.fromJson(Map<String, dynamic> json) {
@@ -70,7 +70,7 @@ class Landlord {
       email: json['email'],
       phoneNumber: json['phone_number'],
       address: json['address'],
-      password: json['password'],
+
     );
   }
 
@@ -80,7 +80,7 @@ class Landlord {
       'email': email,
       'phone_number': phoneNumber,
       'address': address,
-      'password': password,
+
     };
   }
 }

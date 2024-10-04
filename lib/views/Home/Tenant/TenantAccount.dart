@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../Services/authService.dart';
 import '../../../widgets/bottomNavigationBar.dart';
+
 
 class TenantAccountScreen extends StatefulWidget {
   @override
@@ -8,6 +10,7 @@ class TenantAccountScreen extends StatefulWidget {
 
 class _TenantAccountScreenState extends State<TenantAccountScreen> {
   int _selectedIndex = 0;
+  final AuthService _authService = AuthService();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -18,6 +21,24 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
     if (index == 3) {
       // Navigate to account screen if needed, or implement your logic here.
     }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await _authService.logout();
+      Navigator.pushReplacementNamed(context, '/login'); // Adjust route to your login screen
+    } catch (e) {
+      _showSnackbar('Logout failed: $e');
+    }
+  }
+
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -99,6 +120,19 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                   ),
                   child: Text('Edit Account', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+              SizedBox(height: 24),
+
+              // Logout Button
+              Center(
+                child: ElevatedButton(
+                  onPressed: _logout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red, // Logout button color
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                  ),
+                  child: Text('Logout', style: TextStyle(color: Colors.white)),
                 ),
               ),
             ],

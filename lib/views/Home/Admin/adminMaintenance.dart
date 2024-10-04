@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../Services/maintenance_service.dart'; // Import the MaintenanceService
+import '../../../utils/urlContants.dart';
 import '../../../widgets/bottomNavigationBar.dart';
-
 
 class AdminMaintenanceScreen extends StatefulWidget {
   const AdminMaintenanceScreen({super.key});
@@ -11,6 +12,29 @@ class AdminMaintenanceScreen extends StatefulWidget {
 
 class _AdminMaintenanceScreenState extends State<AdminMaintenanceScreen> {
   int _selectedIndex = 0;
+  final MaintenanceService _maintenanceService = MaintenanceService(base_url); // Replace with your API base URL
+  List<MaintenanceTicket> _tickets = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMaintenanceTickets();
+  }
+
+  Future<void> _fetchMaintenanceTickets() async {
+    try {
+      final tickets = await _maintenanceService.fetchMaintenanceTickets();
+      setState(() {
+        _tickets = tickets;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -18,17 +42,13 @@ class _AdminMaintenanceScreenState extends State<AdminMaintenanceScreen> {
     });
   }
 
-  void _showTicketDetailsDialog(String ticketId) {
-    // Sample ticket details
+  void _showTicketDetailsDialog(MaintenanceTicket ticket) {
     final Map<String, String> ticketDetails = {
-      'Ticket #': ticketId,
-      'Raised by': 'John Doe',
-      'Apartment': 'Lake View',
-      'House No.': '207',
-      'Land Lord': 'Mark Fang',
-      'Date': '10-12-2024',
-      'Message': 'Sink is leaking.',
-      'Time': '9:30 am'
+      'Ticket #': ticket.id.toString(),
+      'Issue': ticket.issue,
+      'Description': ticket.description,
+      'Status': ticket.status,
+      'Date Created': ticket.createdAt.toLocal().toString(),
     };
 
     showDialog(
@@ -40,29 +60,6 @@ class _AdminMaintenanceScreenState extends State<AdminMaintenanceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: ticketDetails.entries.map((entry) {
-                if (entry.key == 'Message') {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${entry.key}:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Container(
-                        padding: EdgeInsets.all(8),
-                        margin: EdgeInsets.only(top: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[50],
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          entry.value,
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ],
-                  );
-                }
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2.0),
                   child: Row(
@@ -139,33 +136,13 @@ class _AdminMaintenanceScreenState extends State<AdminMaintenanceScreen> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    "Location",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    "Category",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    "Actions",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
             Expanded(
-              child: ListView.builder(
-                itemCount: 5, // Replace with your dynamic data count
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                itemCount: _tickets.length,
                 itemBuilder: (context, index) {
+                  final ticket = _tickets[index];
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Card(
@@ -174,22 +151,16 @@ class _AdminMaintenanceScreenState extends State<AdminMaintenanceScreen> {
                       ),
                       elevation: 2,
                       child: ListTile(
-                        title: Row(
-                          children: [
-                            Expanded(child: Text("Lake View")), // Replace with actual data
-                            Expanded(child: Text("Plumbing")), // Replace with actual data
-                            Expanded(
-                              child: TextButton(
-                                onPressed: () {
-                                  _showTicketDetailsDialog('Ticket #001'); // Replace with actual ticket ID
-                                },
-                                child: Text(
-                                  'Details',
-                                  style: TextStyle(color: Colors.blue),
-                                ),
-                              ),
-                            ),
-                          ],
+                        title: Text(ticket.issue),
+                        subtitle: Text(ticket.status),
+                        trailing: TextButton(
+                          onPressed: () {
+                            _showTicketDetailsDialog(ticket);
+                          },
+                          child: Text(
+                            'Details',
+                            style: TextStyle(color: Colors.blue),
+                          ),
                         ),
                       ),
                     ),

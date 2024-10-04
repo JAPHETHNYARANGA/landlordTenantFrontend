@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:landlord_tenant/utils/urlContants.dart';
 import '../../../Services/propertiesService.dart';
+import '../../../Services/landlordService.dart'; // Import your landlord service
 import '../../../widgets/bottomNavigationBar.dart'; // Import your custom bottom navigation bar
 
 class AdminPropertiesScreen extends StatefulWidget {
   const AdminPropertiesScreen({Key? key}) : super(key: key);
+
 
   @override
   _AdminPropertiesScreenState createState() => _AdminPropertiesScreenState();
@@ -11,14 +14,21 @@ class AdminPropertiesScreen extends StatefulWidget {
 
 class _AdminPropertiesScreenState extends State<AdminPropertiesScreen> {
   int _selectedIndex = 0;
-  final PropertyService _propertyService = PropertyService(); // Replace with your actual service
+  final PropertyService _propertyService = PropertyService();
+  final LandlordService _landlordService = LandlordService(base_url); // Replace with your actual base URL
   List<dynamic> _properties = [];
+  List<Landlord> _landlords = [];
+  String? _selectedStatus;
+  int? _selectedLandlordId;
   bool _isLoading = true;
+
+  final List<String> _statuses = ['Available', 'Unavailable', 'Pending']; // Add more statuses as needed
 
   @override
   void initState() {
     super.initState();
     _loadProperties();
+    _loadLandlords();
   }
 
   Future<void> _loadProperties() async {
@@ -26,10 +36,24 @@ class _AdminPropertiesScreenState extends State<AdminPropertiesScreen> {
       final properties = await _propertyService.getProperties();
       setState(() {
         _properties = properties;
-        _isLoading = false;
       });
     } catch (e) {
       print('Error loading properties: $e');
+    }
+  }
+
+  Future<void> _loadLandlords() async {
+    try {
+      final landlords = await _landlordService.fetchLandlords();
+
+      setState(() {
+        _landlords = landlords;
+        _isLoading = false;
+      });
+      // Log fetched landlords
+      print('Fetched landlords: $_landlords');
+    } catch (e) {
+      print('Error loading landlords: $e');
       setState(() {
         _isLoading = false;
       });
@@ -49,7 +73,6 @@ class _AdminPropertiesScreenState extends State<AdminPropertiesScreen> {
     final _roomsController = TextEditingController();
     final _priceController = TextEditingController();
     final _typeController = TextEditingController();
-    final _statusController = TextEditingController();
 
     showDialog(
       context: context,
@@ -132,15 +155,51 @@ class _AdminPropertiesScreenState extends State<AdminPropertiesScreen> {
                     },
                   ),
                   SizedBox(height: 10),
-                  TextFormField(
-                    controller: _statusController,
+                  DropdownButtonFormField<String>(
+                    value: _selectedStatus,
+                    items: _statuses.map((String status) {
+                      return DropdownMenuItem<String>(
+                        value: status,
+                        child: Text(status),
+                      );
+                    }).toList(),
                     decoration: InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),
                     ),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedStatus = value;
+                      });
+                    },
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter property status';
+                      if (value == null) {
+                        return 'Please select a status';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  DropdownButtonFormField<int>(
+                    value: _selectedLandlordId,
+                    items: _landlords.map((Landlord landlord) {
+                      return DropdownMenuItem<int>(
+                        value: landlord.id,
+                        child: Text(landlord.name),
+                      );
+                    }).toList(),
+                    decoration: InputDecoration(
+                      labelText: 'Landlord',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedLandlordId = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Please select a landlord';
                       }
                       return null;
                     },
@@ -166,7 +225,8 @@ class _AdminPropertiesScreenState extends State<AdminPropertiesScreen> {
                     'rooms': _roomsController.text,
                     'price': _priceController.text,
                     'type': _typeController.text,
-                    'status': _statusController.text,
+                    'status': _selectedStatus,
+                    'landlord_id': _selectedLandlordId,
                   };
                   try {
                     await _propertyService.addProperty(newProperty);
@@ -243,6 +303,8 @@ class _AdminPropertiesScreenState extends State<AdminPropertiesScreen> {
                 Text('Type: ${property['type']}'),
                 SizedBox(height: 10),
                 Text('Status: ${property['status']}'),
+                SizedBox(height: 10),
+                Text('Landlord ID: ${property['landlord_id']}'), // Display landlord ID
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../widgets/bottomNavigationBar.dart';
+import '../../../Services/maintenance_service.dart'; // Adjust the import as per your project structure
 
+// Tenant Ticket Screen
 class TenantTicketScreen extends StatefulWidget {
   const TenantTicketScreen({Key? key}) : super(key: key);
 
@@ -9,19 +10,13 @@ class TenantTicketScreen extends StatefulWidget {
 }
 
 class _TenantTicketScreenState extends State<TenantTicketScreen> {
-  final List<Map<String, dynamic>> tickets = [
-    {'id': '#123456', 'category': 'Plumbing', 'status': 'Closed'},
-    {'id': '#123457', 'category': 'Electrical', 'status': 'Open'},
-    {'id': '#123458', 'category': 'HVAC', 'status': 'Pending'},
-  ];
+  final List<Map<String, dynamic>> tickets = [];
+  final MaintenanceService maintenanceService = MaintenanceService('https://your-api-url.com');
 
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  final TextEditingController _issueController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final int tenantId = 2; // Example tenant ID
+  final int propertyId = 2; // Example property ID
 
   void _raiseTicket() {
     showModalBottomSheet(
@@ -29,7 +24,7 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
       builder: (BuildContext context) {
         return Container(
           padding: EdgeInsets.all(20),
-          height: 500,
+          height: 400,
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,22 +32,34 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
                 Text('Raise a Maintenance Ticket', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 SizedBox(height: 20),
                 TextField(
-                  decoration: InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
+                  controller: _issueController,
+                  decoration: InputDecoration(labelText: 'Issue', border: OutlineInputBorder()),
                 ),
                 SizedBox(height: 10),
                 TextField(
-                  decoration: InputDecoration(labelText: 'Location', border: OutlineInputBorder()),
-                ),
-                SizedBox(height: 10),
-                TextField(
+                  controller: _descriptionController,
                   decoration: InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
                   maxLines: 3,
                 ),
                 SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: () {
-                    // Logic to handle ticket submission
-                    Navigator.pop(context);
+                  onPressed: () async {
+                    try {
+                      await maintenanceService.createTicket(
+                        tenantId,
+                        propertyId,
+                        _issueController.text,
+                        _descriptionController.text,
+                      );
+                      Navigator.pop(context);
+                      await _fetchTickets(); // Refresh the ticket list
+                      _issueController.clear();
+                      _descriptionController.clear();
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to create ticket: ${e.toString()}')),
+                      );
+                    }
                   },
                   child: Text('Submit Ticket'),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
@@ -63,6 +70,30 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
         );
       },
     );
+  }
+
+  Future<void> _fetchTickets() async {
+    try {
+      List<MaintenanceTicket> fetchedTickets = await maintenanceService.fetchMaintenanceTickets();
+      setState(() {
+        tickets.clear();
+        tickets.addAll(fetchedTickets.map((ticket) => {
+          'id': ticket.id,
+          'category': ticket.issue,
+          'status': ticket.status,
+        }).toList());
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch tickets: ${e.toString()}')),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTickets(); // Fetch tickets when the screen is initialized
   }
 
   Widget _ticketItem(Map<String, dynamic> ticket) {
@@ -80,7 +111,7 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
                   children: [
                     Text("Ticket ID", style: TextStyle(fontWeight: FontWeight.bold)),
                     SizedBox(height: 4),
-                    Text(ticket['id'], style: TextStyle(fontSize: 16)),
+                    Text(ticket['id'].toString(), style: TextStyle(fontSize: 16)),
                   ],
                 ),
                 Column(
@@ -98,7 +129,7 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
                     SizedBox(height: 4),
                     Chip(
                       label: Text(ticket['status']),
-                      backgroundColor: ticket['status'] == 'Closed' ? Colors.green : Colors.red,
+                      backgroundColor: ticket['status'] == 'closed' ? Colors.green : Colors.red,
                     ),
                   ],
                 ),
@@ -141,10 +172,6 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
       ),
     );
   }

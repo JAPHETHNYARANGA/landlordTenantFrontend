@@ -52,7 +52,6 @@ class Admin {
   final String email;
   final String phoneNumber;
   final String address;
-  final String password;
 
   Admin({
     required this.id,
@@ -60,7 +59,6 @@ class Admin {
     required this.email,
     required this.phoneNumber,
     required this.address,
-    required this.password,
   });
 
   factory Admin.fromJson(Map<String, dynamic> json) {
@@ -69,8 +67,7 @@ class Admin {
       name: json['name'],
       email: json['email'],
       phoneNumber: json['phone_number'],
-      address: json['address'],
-      password: json['password'],
+      address: json['address']
     );
   }
 
@@ -80,7 +77,6 @@ class Admin {
       'email': email,
       'phone_number': phoneNumber,
       'address': address,
-      'password': password,
     };
   }
 }

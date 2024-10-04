@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../views/Home/Admin/adminAccount.dart';
 import '../views/Home/Admin/adminHome.dart';
 import '../views/Home/Admin/adminLandlord.dart';
 import '../views/Home/Admin/adminTenant.dart';
+import '../views/Home/LandLord/LandlordAccounts.dart';
 import '../views/Home/Tenant/tenantHome.dart';
 import '../views/Home/SharedPages/TermsConditions.dart';
 import '../views/Home/Tenant/TenantAccount.dart';
@@ -44,6 +46,28 @@ class CustomBottomNavigationBar extends StatelessWidget {
     }
   }
 
+  void _navigateToAccount(BuildContext context) async {
+    final userType = await _getUserType();
+
+    switch (userType) {
+      case 'superAdmin':
+        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminAccountScreen())); // Adjust to correct Admin Account page
+        break;
+      case 'admin':
+        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminAccountScreen())); // Adjust to correct Admin Account page
+        break;
+      case 'tenant':
+        Navigator.push(context, MaterialPageRoute(builder: (context) => TenantAccountScreen()));
+        break;
+      case 'landlord':
+        Navigator.push(context, MaterialPageRoute(builder: (context) => LandlordAccountScreen())); // Adjust to correct Landlord Account page
+        break;
+      default:
+        Navigator.push(context, MaterialPageRoute(builder: (context) => TenantAccountScreen())); // Default case
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
@@ -66,7 +90,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
             ),
           ),
           _buildNavItem(Icons.description, 'Terms & Conditions', selectedIndex == 2, 2, context),
-          _buildNavItem(Icons.person, 'My Account', selectedIndex == 3, 3, context),
+          _buildNavItem(Icons.person, 'My Account', selectedIndex == 3, 3, context, _navigateToAccount),
         ],
       ),
     );
@@ -81,12 +105,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
             icon: Icon(icon),
             color: isSelected ? Colors.blue : Colors.grey,
             onPressed: () {
-              if (navigationCallback != null && index == 0) {
+              if (navigationCallback != null) {
                 navigationCallback(context);
-              } else if (index == 2) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => TermsConditionsPage()));
-              } else if (index == 3) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => TenantAccountScreen()));
               } else {
                 onItemTapped(index);
               }

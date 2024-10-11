@@ -17,6 +17,17 @@ class PropertyService {
     }
   }
 
+  // Fetch landlord properties
+  Future<List<dynamic>> getLandlordProperties() async {
+    var response = await http.get(Uri.parse('${base_url}/landlord_properties'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load properties');
+    }
+  }
+
+
   // Add a new property
   Future<void> addProperty(Map<String, dynamic> propertyData) async {
     var response = await http.post(

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:landlord_tenant/views/Home/Admin/adminHome.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminLandlord.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminTenant.dart';
 import 'package:landlord_tenant/views/Home/Tenant/tenantHome.dart';
 import '../../Services/authService.dart';
 import '../../sharedPreferences/adminSharedPreference.dart';
+import '../Home/LandLord/landlordHome.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -16,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _rememberMe = false;
   bool _isLoading = false; // Loading state
+  bool _obscurePassword = true; // Password visibility state
 
   void _login() async {
     setState(() {
@@ -40,23 +40,22 @@ class _LoginScreenState extends State<LoginScreen> {
         await SharedPreferencesManager.setString('userName', userName);
         await SharedPreferencesManager.setString('userType', userType);
 
-        if(userType == 'admin'){
-          // Navigate to the AdminHomeScreen
+        // Navigate based on user type
+        if (userType == 'admin' || userType == 'superAdmin') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => AdminHomeScreen()),
+            MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
           );
-        }else if(userType == 'superAdmin'){
+        } else if (userType == 'tenant') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => AdminHomeScreen()),
+            MaterialPageRoute(builder: (context) => TenantHome()),
           );
-        } else if(userType == 'tenant'){
-          Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (context) => TenantHome()),);
-        }else if(userType == 'landlord'){
-          Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => AdminLandlordScreen(),));
+        } else if (userType == 'landlord') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LandlordHome()),
+          );
         }
       } else {
         _showSnackbar('Login failed');
@@ -75,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -85,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Main Content
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -94,8 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Welcome Back Text
-                    Text(
+                    const Text(
                       'Welcome Back!',
                       style: TextStyle(
                         fontSize: 32,
@@ -103,9 +100,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 10),
-                    // Subtitle
-                    Text(
+                    const SizedBox(height: 10),
+                    const Text(
                       'Log in to continue your journey.',
                       style: TextStyle(
                         fontSize: 16,
@@ -113,14 +109,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 30),
+                    const SizedBox(height: 30),
                     // Email Input Field
                     TextField(
                       controller: _emailController,
                       decoration: InputDecoration(
                         hintText: 'Enter Email',
                         filled: true,
-                        fillColor: Colors.orange[50], // Light orange color
+                        fillColor: Colors.orange[50],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30.0),
                           borderSide: BorderSide.none,
@@ -128,33 +124,44 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
-                    SizedBox(height: 20),
-                    // Password Input Field
+                    const SizedBox(height: 20),
+                    // Password Input Field with Eye Icon
                     TextField(
                       controller: _passwordController,
+                      obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         hintText: 'Enter Password',
                         filled: true,
-                        fillColor: Colors.orange[50], // Light orange color
+                        fillColor: Colors.orange[50],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30.0),
                           borderSide: BorderSide.none,
                         ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword; // Toggle password visibility
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
                     ),
-                    SizedBox(height: 30),
-                    // Login Button
+                    const SizedBox(height: 30),
                     ElevatedButton(
-                      onPressed: _isLoading ? null : _login, // Disable button when loading
+                      onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange, // Button color
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30.0),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'LOG IN',
                         style: TextStyle(
                           fontSize: 18,
@@ -163,8 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 20),
-                    // Remember me & Forgot Password Row
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -178,14 +184,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 });
                               },
                             ),
-                            Text('Remember me'),
+                            const Text('Remember me'),
                           ],
                         ),
                         TextButton(
                           onPressed: () {
                             // Handle forgot password
                           },
-                          child: Text(
+                          child: const Text(
                             'Forgot Password?',
                             style: TextStyle(color: Colors.orange),
                           ),
@@ -193,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     Image.asset(
-                      'assets/images/city_img.png', // Replace with your actual skyline asset path
+                      'assets/images/city_img.png',
                       fit: BoxFit.cover,
                       height: 200,
                     ),
@@ -202,11 +208,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          // Full-Screen Loading Indicator
           if (_isLoading)
             Container(
-              color: Colors.black54, // Semi-transparent background
-              child: Center(
+              color: Colors.black54,
+              child: const Center(
                 child: CircularProgressIndicator(),
               ),
             ),

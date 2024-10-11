@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../sharedPreferences/adminSharedPreference.dart';
+
 class TenantService {
   final String baseUrl;
+  String? token = SharedPreferencesManager.getString('token');
 
   TenantService(this.baseUrl);
 
@@ -20,6 +23,32 @@ class TenantService {
       throw Exception(e.toString());
     }
   }
+
+  Future<List<Tenant>> fetchLandlordTenants() async {
+    try {
+      // Check if the token is null or empty
+      if (token == null || token!.isEmpty) {
+        throw Exception('Token is missing');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/landlord_tenants'),
+        headers: {
+          'Authorization': 'Bearer $token', // Add the token here
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> tenantData = jsonDecode(response.body)['tenants'];
+        return tenantData.map((data) => Tenant.fromJson(data)).toList();
+      } else {
+        throw Exception('Failed to load tenants');
+      }
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
 
   Future<void> createTenant(Tenant tenant) async {
     try {

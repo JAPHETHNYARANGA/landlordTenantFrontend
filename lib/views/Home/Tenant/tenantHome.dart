@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../widgets/MessageFloatingIcon.dart';
 import '../../../widgets/bottomNavigationBar.dart';
 import 'TenantReceipt.dart';
@@ -11,6 +12,20 @@ class TenantHome extends StatefulWidget {
 
 class _TenantHomeState extends State<TenantHome> {
   int _selectedIndex = 0;
+  String _userName = ''; // Variable to store the user's name
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName(); // Load the user name when the widget is initialized
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('userName') ?? 'User'; // Default to 'User' if name is not found
+    });
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -21,10 +36,10 @@ class _TenantHomeState extends State<TenantHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Background color similar to the image
+      backgroundColor: Colors.grey[200],
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center, // Center the content
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -32,38 +47,37 @@ class _TenantHomeState extends State<TenantHome> {
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: Colors.orange[200], // Placeholder avatar color
+                    backgroundColor: Colors.orange[200],
                     child: Icon(Icons.person, size: 50, color: Colors.white),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Welcome back, John Doe 👋',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    'Welcome back, $_userName 👋', // Use the loaded user name here
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'TOTAL BALANCE (KSH)',
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
-                  Text(
+                  const Text(
                     'KSH 999,999.999',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
                       // Add funds action
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orangeAccent,
-                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
-                    child: Text('Add funds'),
+                    child: const Text('Add funds'),
                   ),
-                  SizedBox(height: 20),
-                  // Payment statements section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -82,9 +96,9 @@ class _TenantHomeState extends State<TenantHome> {
                       ],
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  const SizedBox(height: 8),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -92,7 +106,7 @@ class _TenantHomeState extends State<TenantHome> {
                         SizedBox(width: 8),
                         Text(
                           '- KSH. 50.00  18 Aug, 09:38 AM',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -112,7 +126,7 @@ class _TenantHomeState extends State<TenantHome> {
                   _buildGridItem(Icons.build, "Raise Ticket", onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => TenantTicketScreen()),
+                      MaterialPageRoute(builder: (context) => const TenantTicketScreen()),
                     );
                   }),
                   _buildGridItem(Icons.house, "Pay Rent"),
@@ -151,11 +165,11 @@ class _TenantHomeState extends State<TenantHome> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Icon(icon, size: 50, color: Colors.orangeAccent), // Adjust icon color
-            SizedBox(height: 8),
+            Icon(icon, size: 50, color: Colors.orangeAccent),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),

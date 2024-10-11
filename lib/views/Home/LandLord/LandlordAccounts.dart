@@ -1,16 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class LandlordAccountScreen extends StatelessWidget {
+import '../../../Services/authService.dart';
+import '../../../widgets/bottomNavigationBar.dart';
+import '../../Login/loginScreen.dart';
+
+class LandlordAccountScreen extends StatefulWidget {
+  @override
+  _LandlordAccountScreenState createState() => _LandlordAccountScreenState();
+}
+
+class _LandlordAccountScreenState extends State<LandlordAccountScreen> {
+  int _selectedIndex = 0; // Track the selected index for the bottom navigation
+  final AuthService _authService = AuthService();
+  Map<String, dynamic>? _userData; // Variable to hold user data
+  bool _isLoading = true; // Variable to show loading state
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData(); // Fetch user data on initialization
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      final data = await _authService.fetchUser();
+      setState(() {
+        _userData = data['user']; // Store user data
+        _isLoading = false; // Stop loading
+      });
+    } catch (error) {
+      // Handle error (e.g., show a snackbar)
+      print('Error fetching user data: $error');
+      setState(() {
+        _isLoading = false; // Stop loading even on error
+      });
+    }
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    // Handle navigation based on selected index
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Landlord Account'),
         centerTitle: true,
-        backgroundColor: Colors.green, // Change color as needed
+        backgroundColor: Colors.green,
       ),
-      body: Padding(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator()) // Show loading indicator
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -21,26 +66,10 @@ class LandlordAccountScreen extends StatelessWidget {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
-            _buildProfileTile('Name', 'Landlord Name'), // Replace with actual name
-            _buildProfileTile('Email', 'landlord@example.com'), // Replace with actual email
-            _buildProfileTile('Property Count', '5'), // Replace with actual property count
-            SizedBox(height: 40),
-
-            // Actions Section
-            Text(
-              'Actions',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
-            _buildActionButton(context, 'View Properties', () {
-              // Navigate to View Properties page
-            }),
-            _buildActionButton(context, 'Manage Tenants', () {
-              // Navigate to Manage Tenants page
-            }),
-            _buildActionButton(context, 'Add New Property', () {
-              // Navigate to Add Property page
-            }),
+            _buildProfileTile('Name', _userData?['name'] ?? 'N/A'),
+            _buildProfileTile('Email', _userData?['email'] ?? 'N/A'),
+            _buildProfileTile('Phone Number', _userData?['phone_number'] ?? 'N/A'),
+            _buildProfileTile('Address', _userData?['address'] ?? 'N/A'),
             SizedBox(height: 40),
 
             // Logout Button
@@ -50,17 +79,21 @@ class LandlordAccountScreen extends StatelessWidget {
                   await _logout(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red, // Logout button color
+                  backgroundColor: Colors.red,
                   padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
                 child: Text(
                   'Logout',
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }
@@ -76,24 +109,14 @@ class LandlordAccountScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, String title, VoidCallback onPressed) {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.symmetric(vertical: 10),
-      child: ListTile(
-        title: Text(title),
-        trailing: Icon(Icons.arrow_forward),
-        onTap: onPressed,
-      ),
-    );
-  }
-
   Future<void> _logout(BuildContext context) async {
-    // Clear the shared preferences
+    await _authService.logout();
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
-    // Navigate to Login Screen (adjust this based on your routing)
-    Navigator.pushReplacementNamed(context, '/login');
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
   }
 }

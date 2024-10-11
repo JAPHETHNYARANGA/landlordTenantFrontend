@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:landlord_tenant/views/Home/LandLord/landlordHome.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../views/Home/Admin/adminAccount.dart';
 import '../views/Home/Admin/adminHome.dart';
@@ -29,8 +30,6 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
     switch (userType) {
       case 'admin':
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminHomeScreen()));
-        break;
       case 'superAdmin':
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminHomeScreen()));
         break;
@@ -38,7 +37,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => TenantHome()));
         break;
       case 'landlord':
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminLandlordScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LandlordHome()));
         break;
       default:
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => TenantHome())); // Default to tenant home
@@ -46,26 +45,28 @@ class CustomBottomNavigationBar extends StatelessWidget {
     }
   }
 
-  void _navigateToAccount(BuildContext context) async {
+  Future<void> _navigateToAccount(BuildContext context) async {
     final userType = await _getUserType();
 
     switch (userType) {
       case 'superAdmin':
-        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminAccountScreen())); // Adjust to correct Admin Account page
-        break;
       case 'admin':
-        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminAccountScreen())); // Adjust to correct Admin Account page
+        Navigator.push(context, MaterialPageRoute(builder: (context) => AdminAccountScreen()));
         break;
       case 'tenant':
         Navigator.push(context, MaterialPageRoute(builder: (context) => TenantAccountScreen()));
         break;
       case 'landlord':
-        Navigator.push(context, MaterialPageRoute(builder: (context) => LandlordAccountScreen())); // Adjust to correct Landlord Account page
+        Navigator.push(context, MaterialPageRoute(builder: (context) => LandlordAccountScreen()));
         break;
       default:
         Navigator.push(context, MaterialPageRoute(builder: (context) => TenantAccountScreen())); // Default case
         break;
     }
+  }
+
+  void _navigateToTermsConditions(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => TermsConditionsPage()));
   }
 
   @override
@@ -89,7 +90,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
               onPressed: () {}, // Typically no action
             ),
           ),
-          _buildNavItem(Icons.description, 'Terms & Conditions', selectedIndex == 2, 2, context),
+          _buildNavItem(Icons.description, 'Terms & Conditions', selectedIndex == 2, 2, context, _navigateToTermsConditions),
           _buildNavItem(Icons.person, 'My Account', selectedIndex == 3, 3, context, _navigateToAccount),
         ],
       ),
@@ -103,8 +104,9 @@ class CustomBottomNavigationBar extends StatelessWidget {
         children: [
           IconButton(
             icon: Icon(icon),
-            color: isSelected ? Colors.blue : Colors.grey,
+            color: isSelected ? Colors.blue : Colors.grey, // This line highlights the selected icon
             onPressed: () {
+              // Directly handle the tap without waiting for state updates
               if (navigationCallback != null) {
                 navigationCallback(context);
               } else {
@@ -116,7 +118,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
             label,
             style: TextStyle(
               color: isSelected ? Colors.blue : Colors.grey,
-              fontSize: 5,
+              fontSize: 5, // Adjusted for better readability
               overflow: TextOverflow.ellipsis,
             ),
           ),

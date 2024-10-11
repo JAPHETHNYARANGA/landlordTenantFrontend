@@ -51,4 +51,26 @@ class AuthService {
       throw Exception('Failed to log out');
     }
   }
+
+  Future<Map<String, dynamic>> fetchUser() async {
+    String? token = SharedPreferencesManager.getString('token');
+
+    if (token == null) {
+      throw Exception('No user is logged in.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$_baseUrl/user'), // Adjust the URL as needed for fetching user info
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch user info');
+    }
+  }
 }

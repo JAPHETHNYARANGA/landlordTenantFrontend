@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+
+import '../sharedPreferences/adminSharedPreference.dart';
 
 class MaintenanceService {
   final String baseUrl;
+  String? token = SharedPreferencesManager.getString('token');
 
   MaintenanceService(this.baseUrl);
 
@@ -17,22 +21,109 @@ class MaintenanceService {
     }
   }
 
-  Future<void> createTicket(int tenantId, int propertyId, String issue, String description) async {
-    final response = await http.post(
+  Future<List<MaintenanceTicket>> fetchLandlordMaintenanceTickets() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/landlord_tickets'),
+        headers: {
+          'Authorization': 'Bearer $token', // Include the token in the headers
+          'Content-Type': 'application/json', // Optionally set the content type
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> jsonResponse = json.decode(response.body);
+        return jsonResponse.map((ticket) => MaintenanceTicket.fromJson(ticket)).toList();
+      } else {
+        // Log the actual response body for debugging
+        print('Error response body: ${response.body}');
+        throw Exception('Failed to load maintenance tickets: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Log any exceptions that occur
+      print('Error fetching maintenance tickets: $e');
+      throw Exception('Error fetching maintenance tickets: $e');
+    }
+  }
+
+  Future<List<MaintenanceTicket>> fetchTenantMaintenanceTickets() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/tenant_tickets'),
+        headers: {
+          'Authorization': 'Bearer $token', // Include the token in the headers
+          'Content-Type': 'application/json', // Optionally set the content type
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> jsonResponse = json.decode(response.body);
+        return jsonResponse.map((ticket) => MaintenanceTicket.fromJson(ticket)).toList();
+      } else {
+        // Log the actual response body for debugging
+        print('Error response body: ${response.body}');
+        throw Exception('Failed to load maintenance tickets: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Log any exceptions that occur
+      print('Error fetching maintenance tickets: $e');
+      throw Exception('Error fetching maintenance tickets: $e');
+    }
+  }
+
+
+
+
+  // Future<void> createTicket(int tenantId, int propertyId, String issue, String description, File? image,) async {
+  //   final response = await http.post(
+  //     Uri.parse('$baseUrl/maintenance-tickets'),
+  //     headers: {'Content-Type': 'application/json'},
+  //     body: json.encode({
+  //       'tenant_id': tenantId,
+  //       'property_id': propertyId,
+  //       'issue': issue,
+  //       'description': description,
+  //     }),
+  //   );
+  //
+  //   if (response.statusCode != 201) {
+  //     throw Exception('Failed to create maintenance ticket');
+  //   }
+  // }
+
+  Future<void> createTicket(
+      int tenantId,
+      int propertyId,
+      String issue,
+      String description,
+      File? image, // Add the image parameter
+      ) async {
+    var request = http.MultipartRequest(
+      'POST',
       Uri.parse('$baseUrl/maintenance-tickets'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'tenant_id': tenantId,
-        'property_id': propertyId,
-        'issue': issue,
-        'description': description,
-      }),
     );
+
+    request.headers['Content-Type'] = 'application/json';
+    request.fields['tenant_id'] = tenantId.toString();
+    request.fields['property_id'] = propertyId.toString();
+    request.fields['issue'] = issue;
+    request.fields['description'] = description;
+
+    // If an image is provided, add it to the request
+    if (image != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+        'image', // Name of the field to which the file is attached
+        image.path,
+      ));
+    }
+
+    final response = await request.send();
 
     if (response.statusCode != 201) {
       throw Exception('Failed to create maintenance ticket');
     }
   }
+
 }
 
 

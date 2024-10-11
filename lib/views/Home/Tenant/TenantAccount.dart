@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../Services/authService.dart';
 import '../../../widgets/bottomNavigationBar.dart';
-
+import '../../Login/loginScreen.dart';
 
 class TenantAccountScreen extends StatefulWidget {
   @override
@@ -11,25 +12,60 @@ class TenantAccountScreen extends StatefulWidget {
 class _TenantAccountScreenState extends State<TenantAccountScreen> {
   int _selectedIndex = 0;
   final AuthService _authService = AuthService();
+  Map<String, dynamic>? _user; // Variable to hold user information
+  bool _isLoading = true; // Loading state
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUser(); // Fetch user info when the screen is initialized
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-
     // Handle navigation logic here if necessary
-    if (index == 3) {
-      // Navigate to account screen if needed, or implement your logic here.
+  }
+
+  Future<void> _fetchUser() async {
+    try {
+      final response = await _authService.fetchUser(); // Fetch user data from AuthService
+
+      // Log the response for debugging
+      print('Response from fetchUser: $response');
+
+      if (response['success']) {
+        setState(() {
+          _user = response['user']; // Access the user data
+          _isLoading = false; // Stop loading
+        });
+      } else {
+        throw Exception('Failed to fetch user data');
+      }
+    } catch (e) {
+      // Handle error (e.g., show a message to the user)
+      setState(() {
+        _isLoading = false; // Stop loading
+      });
+      _showSnackbar('Error fetching user data: $e');
     }
   }
 
-  Future<void> _logout() async {
-    try {
-      await _authService.logout();
-      Navigator.pushReplacementNamed(context, '/login'); // Adjust route to your login screen
-    } catch (e) {
-      _showSnackbar('Logout failed: $e');
-    }
+  void _logout(BuildContext context) async {
+    await _authService.logout();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
+  }
+
+  void _handleLogout() {
+    _logout(context);
   }
 
   void _showSnackbar(String message) {
@@ -82,12 +118,12 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'John Doe',
+                          _isLoading ? 'Loading...' : (_user?['name'] ?? 'N/A'),
                           style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Tenant ID: 123456',
+                          _isLoading ? 'Loading...' : 'Tenant ID: ${_user?['id'] ?? 'N/A'}',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
@@ -103,10 +139,14 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16),
-              _buildDetailCard('Email', 'john.doe@example.com'),
-              _buildDetailCard('Phone Number', '+1234567890'),
-              _buildDetailCard('Lease Start Date', '01/01/2023'),
-              _buildDetailCard('Lease End Date', '12/31/2023'),
+              if (_isLoading)
+                CircularProgressIndicator()
+              else ...[
+                _buildDetailCard('Email', _user?['email'] ?? 'N/A'),
+                _buildDetailCard('Phone Number', _user?['phone_number'] ?? 'N/A'),
+                _buildDetailCard('Lease Start Date', _user?['lease_start_date'] ?? 'N/A'),
+                _buildDetailCard('Lease End Date', _user?['lease_end_date'] ?? 'N/A'),
+              ],
               SizedBox(height: 24),
 
               // Action Buttons
@@ -127,7 +167,7 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
               // Logout Button
               Center(
                 child: ElevatedButton(
-                  onPressed: _logout,
+                  onPressed: _handleLogout,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red, // Logout button color
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),

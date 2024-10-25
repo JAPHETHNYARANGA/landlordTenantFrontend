@@ -13,7 +13,7 @@ class LandlordPropertiesScreen extends StatefulWidget {
 }
 
 class _LandlordPropertiesScreenState extends State<LandlordPropertiesScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
   final PropertyService _propertyService = PropertyService();
   final LandlordService _landlordService = LandlordService(base_url); // Replace with your actual base URL
   List<dynamic> _properties = [];

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../Services/maintenance_service.dart'; // Import the MaintenanceService
+import '../../../Services/maintenance_service.dart';
 import '../../../utils/urlContants.dart';
 import '../../../widgets/bottomNavigationBar.dart';
 
@@ -12,7 +12,7 @@ class LandlordMaintenanceScreen extends StatefulWidget {
 
 class _LandlordMaintenanceScreenState extends State<LandlordMaintenanceScreen> {
   int _selectedIndex = 0;
-  final MaintenanceService _maintenanceService = MaintenanceService(base_url); // Replace with your API base URL
+  final MaintenanceService _maintenanceService = MaintenanceService(base_url);
   List<MaintenanceTicket> _tickets = [];
   bool _isLoading = true;
 
@@ -42,6 +42,17 @@ class _LandlordMaintenanceScreenState extends State<LandlordMaintenanceScreen> {
     });
   }
 
+  Future<void> _closeTicket(MaintenanceTicket ticket) async {
+    try {
+      // Implement your ticket closing logic here
+      // await _maintenanceService.closeTicket(ticket.id);
+      // Refresh the ticket list after closing the ticket
+      await _fetchMaintenanceTickets();
+    } catch (e) {
+      print('Error closing ticket: $e');
+    }
+  }
+
   void _showTicketDetailsDialog(MaintenanceTicket ticket) {
     final Map<String, String> ticketDetails = {
       'Ticket #': ticket.id.toString(),
@@ -59,21 +70,40 @@ class _LandlordMaintenanceScreenState extends State<LandlordMaintenanceScreen> {
           content: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: ticketDetails.entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                  child: Row(
+              children: [
+                ...ticketDetails.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${entry.key}:',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(entry.value),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 10),
+                // Display ticket image if it exists
+                if (ticket.imageUrl != null && ticket.imageUrl!.isNotEmpty)
+                  Column(
                     children: [
-                      Text(
-                        '${entry.key}:',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      const Text('Image:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Image.network(
+                        ticket.imageUrl!,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                          return const Text('Image could not be loaded');
+                        },
                       ),
-                      const SizedBox(width: 8),
-                      Text(entry.value),
                     ],
                   ),
-                );
-              }).toList(),
+              ],
             ),
           ),
           actions: [
@@ -81,6 +111,16 @@ class _LandlordMaintenanceScreenState extends State<LandlordMaintenanceScreen> {
               child: const Text('Close'),
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white, backgroundColor: Colors.red,
+              ),
+              child: const Text('Close Ticket'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog first
+                _closeTicket(ticket); // Call the close ticket function
               },
             ),
           ],

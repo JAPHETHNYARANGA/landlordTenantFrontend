@@ -53,6 +53,13 @@ class _LandlordTenantScreenState extends State<LandlordTenantScreen> {
   }
 
   void _showAddTenantDialog() {
+    if (_properties.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please add properties first to add a tenant.')),
+      );
+      return; // Exit early if no properties are available
+    }
+
     final _nameController = TextEditingController();
     final _phoneController = TextEditingController();
     final _emailController = TextEditingController();
@@ -189,6 +196,7 @@ class _LandlordTenantScreenState extends State<LandlordTenantScreen> {
     );
   }
 
+
   Future<void> _deleteTenant(int id) async {
     try {
       await _tenantService.deleteTenant(id);
@@ -282,7 +290,7 @@ class _LandlordTenantScreenState extends State<LandlordTenantScreen> {
         actions: [
           TextButton(
             onPressed: () {},
-            child: Text('ADMIN', style: TextStyle(color: Colors.black)),
+            child: Text('LANDLORD', style: TextStyle(color: Colors.black)),
           ),
         ],
         backgroundColor: Colors.white,

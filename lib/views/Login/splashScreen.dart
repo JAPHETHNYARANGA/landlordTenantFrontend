@@ -3,6 +3,7 @@ import 'package:landlord_tenant/sharedPreferences/adminSharedPreference.dart';
 import 'package:landlord_tenant/views/Home/Admin/adminHome.dart';
 import 'package:landlord_tenant/views/Home/Admin/adminLandlord.dart';
 import 'package:landlord_tenant/views/Home/Admin/adminTenant.dart';
+import 'package:landlord_tenant/views/Home/LandLord/landlordHome.dart';
 import 'package:landlord_tenant/views/Home/Tenant/tenantHome.dart';
 import 'loginScreen.dart';
 
@@ -60,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
       } else if (userType == 'landlord') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AdminLandlordScreen()),
+          MaterialPageRoute(builder: (context) => LandlordHome()),
         );
       } else {
         // Default to login if userType is unrecognized
@@ -105,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 // Tagline
                 Text(
-                  'LIVE RIGHT',
+                  'MODISH LIVING KE',
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.grey,

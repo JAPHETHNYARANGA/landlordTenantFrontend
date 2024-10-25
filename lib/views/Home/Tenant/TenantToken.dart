@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../widgets/bottomNavigationBar.dart';
 
 class TenantTokensScreen extends StatefulWidget {
   @override
@@ -6,15 +7,80 @@ class TenantTokensScreen extends StatefulWidget {
 }
 
 class _TenantTokensState extends State<TenantTokensScreen> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   // Sample data for tokens and amounts
   final List<Map<String, dynamic>> tokenData = [
-    {'token': '788**899', 'amount': 999},
-    {'token': '788**899', 'amount': 999},
-    {'token': '788**899', 'amount': 999},
-    {'token': '788**899', 'amount': 999},
-    {'token': '788**899', 'amount': 999},
-    {'token': '788**899', 'amount': 999},
+    {'token': '788**899', 'amount': 999, 'details': 'Token details for 788**899'},
+    {'token': '788**900', 'amount': 1200, 'details': 'Token details for 788**900'},
+    {'token': '788**901', 'amount': 800, 'details': 'Token details for 788**901'},
+    // Add more tokens if needed
   ];
+
+  // Method to show the payment options modal
+  void _showPaymentOptions(BuildContext context, String action) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                action == 'addFunds' ? 'Add Funds' : 'Buy Tokens',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 20),
+              ListTile(
+                leading: Icon(Icons.payment),
+                title: Text('MPesa'),
+                onTap: () {
+                  // Handle MPesa payment
+                  Navigator.pop(context); // Close modal
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.credit_card),
+                title: Text('Visa'),
+                onTap: () {
+                  // Handle Visa payment
+                  Navigator.pop(context); // Close modal
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Method to show the token details modal
+  void _showTokenDetails(BuildContext context, Map<String, dynamic> token) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Token Details'),
+          content: Text('Token Number: ${token['token']}\nAmount: Ksh.${token['amount']}\nDetails: ${token['details']}'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +93,8 @@ class _TenantTokensState extends State<TenantTokensScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              backgroundColor: Colors.amber, // Avatar color
-              child: Icon(Icons.person, color: Colors.white), // User icon
+              backgroundColor: Colors.amber,
+              child: Icon(Icons.person, color: Colors.white),
             ),
             SizedBox(width: 10),
             Column(
@@ -50,9 +116,9 @@ class _TenantTokensState extends State<TenantTokensScreen> {
                     ),
                     SizedBox(width: 5),
                     Text(
-                      '👋', // waving hand emoji
+                      '👋',
                       style: TextStyle(fontSize: 18),
-                    )
+                    ),
                   ],
                 ),
               ],
@@ -82,7 +148,7 @@ class _TenantTokensState extends State<TenantTokensScreen> {
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   Text(
-                    'KSH 999,999.999',
+                    'KSH 0',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -90,7 +156,7 @@ class _TenantTokensState extends State<TenantTokensScreen> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () => _showPaymentOptions(context, 'addFunds'),
                     child: Text('Add funds'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.amber,
@@ -98,7 +164,7 @@ class _TenantTokensState extends State<TenantTokensScreen> {
                   ),
                   SizedBox(height: 10),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () => _showPaymentOptions(context, 'buyTokens'),
                     child: Text('Buy Tokens'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
@@ -121,7 +187,7 @@ class _TenantTokensState extends State<TenantTokensScreen> {
                       subtitle: Text('Amount: Ksh.${tokenData[index]['amount']}'),
                       trailing: ElevatedButton(
                         onPressed: () {
-                          // Details button action
+                          _showTokenDetails(context, tokenData[index]); // Show token details
                         },
                         child: Text('Details'),
                         style: ElevatedButton.styleFrom(
@@ -136,28 +202,9 @@ class _TenantTokensState extends State<TenantTokensScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.apartment),
-            label: 'Properties',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.rule),
-            label: 'Terms & Conditions',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'My Account',
-          ),
-        ],
-        selectedItemColor: Colors.amber,
-        unselectedItemColor: Colors.grey,
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }

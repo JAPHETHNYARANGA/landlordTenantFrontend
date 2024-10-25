@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminEmergency.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminMaintenance.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminPayments.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminProperties.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminSuperAdmin.dart';
-import 'package:landlord_tenant/views/Home/Admin/adminTenant.dart';
+import 'package:landlord_tenant/utils/urlContants.dart';
+import 'package:landlord_tenant/widgets/bottomNavigationBar.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../Services/adminService.dart';
+import '../../../Services/landlordService.dart';
+import '../../../Services/tenantService.dart';
 import '../../../sharedPreferences/adminSharedPreference.dart';
-import '../../../widgets/MessageFloatingIcon.dart';
-import '../../../widgets/bottomNavigationBar.dart';
+import 'adminEmergency.dart';
 import 'adminLandlord.dart';
+import 'adminMaintenance.dart';
+import 'adminPayments.dart';
+import 'adminProperties.dart';
+import 'adminSuperAdmin.dart';
+import 'adminTenant.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -20,17 +24,33 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _selectedIndex = 0;
   String _userName = "User";
-  String _userType = ""; // Store user type
+  String _userType = "";
+
+  List<Tenant> _tenants = [];
+  List<Landlord> _landlords = [];
+  bool _isLoadingTenants = false;
+  bool _isLoadingLandlords = false;
+
+  // Service instances
+  late TenantService _tenantService;
+  late LandlordService _landlordService;
 
   @override
   void initState() {
     super.initState();
     _loadUserNameAndType();
+
+    // Initialize services with your base URL
+    _tenantService = TenantService(base_url); // Replace with your actual base URL
+    _landlordService = LandlordService(base_url); // Replace with your actual base URL
+
+    _fetchTenants();
+    _fetchLandlords();
   }
 
   void _loadUserNameAndType() async {
-    final userName = SharedPreferencesManager.getString('userName');
-    final userType = SharedPreferencesManager.getString('userType'); // Load user type
+    final userName = await SharedPreferencesManager.getString('userName');
+    final userType = await SharedPreferencesManager.getString('userType');
     if (userName != null && userName.isNotEmpty) {
       setState(() {
         _userName = userName;
@@ -38,27 +58,180 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
     if (userType != null && userType.isNotEmpty) {
       setState(() {
-        _userType = userType; // Update user type state
+        _userType = userType;
       });
     }
+  }
+
+  Future<void> _fetchTenants() async {
+    setState(() {
+      _isLoadingTenants = true;
+    });
+
+    try {
+      final tenants = await _tenantService.fetchTenants();
+      setState(() {
+        _tenants = tenants;
+      });
+    } catch (e) {
+      print('Failed to fetch tenants: $e');
+    } finally {
+      setState(() {
+        _isLoadingTenants = false;
+      });
+    }
+  }
+
+  Future<void> _fetchLandlords() async {
+    setState(() {
+      _isLoadingLandlords = true;
+    });
+
+    try {
+      final landlords = await _landlordService.fetchLandlords();
+      setState(() {
+        _landlords = landlords;
+      });
+    } catch (e) {
+      print('Failed to fetch landlords: $e');
+    } finally {
+      setState(() {
+        _isLoadingLandlords = false;
+      });
+    }
+  }
+
+  String formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber.startsWith('0')) {
+      return '254${phoneNumber.substring(1)}';
+    }
+    return phoneNumber;
+  }
+
+  void _launchWhatsApp(String phoneNumber) async {
+    final formattedNumber = formatPhoneNumber(phoneNumber);
+    final message = Uri.encodeComponent("Hello, this is $_userName, an admin from City Realty, here to assist you.");
+    final url = Uri.parse("https://wa.me/$formattedNumber?text=$message");
+
+    if (await canLaunch(url.toString())) {
+      await launch(url.toString());
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _showContactModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Contact Tenants',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold), // Reduced font size
+                    ),
+                    const SizedBox(height: 10),
+                    Divider(),
+                    _isLoadingTenants
+                        ? Center(child: CircularProgressIndicator())
+                        : Expanded(
+                      child: ListView.builder(
+                        itemCount: _tenants.length,
+                        itemBuilder: (context, index) {
+                          return Card(
+                            margin: EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                child: Icon(Icons.person),
+                                backgroundColor: Colors.orangeAccent,
+                              ),
+                              title: Text(
+                                _tenants[index].name,
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold), // Reduced font size
+                              ),
+                              subtitle: Text(
+                                _tenants[index].phoneNumber,
+                                style: TextStyle(fontSize: 10), // Reduced font size
+                              ),
+                              trailing: Icon(Icons.chat, color: Colors.green),
+                              onTap: () {
+                                _launchWhatsApp(_tenants[index].phoneNumber);
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              VerticalDivider(width: 1, thickness: 1),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Contact Landlords',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold), // Reduced font size
+                    ),
+                    const SizedBox(height: 10),
+                    Divider(),
+                    _isLoadingLandlords
+                        ? Center(child: CircularProgressIndicator())
+                        : Expanded(
+                      child: ListView.builder(
+                        itemCount: _landlords.length,
+                        itemBuilder: (context, index) {
+                          return Card(
+                            margin: EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                child: Icon(Icons.person),
+                                backgroundColor: Colors.orangeAccent,
+                              ),
+                              title: Text(
+                                _landlords[index].name,
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold), // Reduced font size
+                              ),
+                              subtitle: Text(
+                                _landlords[index].phoneNumber,
+                                style: TextStyle(fontSize: 10), // Reduced font size
+                              ),
+                              trailing: Icon(Icons.chat, color: Colors.green),
+                              onTap: () {
+                                _launchWhatsApp(_landlords[index].phoneNumber);
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  void _startLiveChat() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => ChatModal(),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      backgroundColor: Colors.transparent,
-    );
   }
 
   @override
@@ -70,7 +243,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top header with logo and dropdown
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -93,7 +265,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             ),
                           ),
                           Text(
-                            "LIVE RIGHT",
+                            "MODISH LIVING KE",
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -106,7 +278,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   DropdownButton<String>(
                     value: 'Admin',
-                    items: <String>['Admin', 'User'].map((String value) {
+                    items: <String>['Admin'].map((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
@@ -128,16 +300,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   crossAxisSpacing: 16.0,
                   mainAxisSpacing: 16.0,
                   children: [
-                    buildCard("LANDLORDS", Icons.person, () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AdminLandlordScreen()),
-                      );
-                    }),
                     buildCard("TENANTS", Icons.group, () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AdminTenantScreen()),
+                      );
+                    }),
+                    buildCard("LANDLORDS", Icons.person, () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AdminLandlordScreen()),
                       );
                     }),
                     buildCard("PROPERTIES", Icons.home, () {
@@ -164,13 +336,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         MaterialPageRoute(builder: (context) => const AdminEmergencyScreen()),
                       );
                     }),
-                    // Conditionally show the add admins card
                     if (_userType == 'superAdmin')
                       buildCard("ADMINS", Icons.admin_panel_settings, () {
-                        // Action to navigate to add admins screen
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => AdminSuperAdminScreen()), // Replace with your actual add admin screen
+                          MaterialPageRoute(builder: (context) => AdminSuperAdminScreen()),
                         );
                       }),
                   ],
@@ -184,8 +354,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
       ),
-      floatingActionButton: ChatFloatingActionButton(
-        onPressed: _startLiveChat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showContactModal();
+        },
+        backgroundColor: Colors.orangeAccent,
+        child: const Icon(Icons.chat),
       ),
     );
   }
@@ -219,74 +393,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-// ChatModal widget remains the same
-class ChatModal extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.3, // Initial height as a percentage of the screen
-      minChildSize: 0.3, // Minimum height
-      maxChildSize: 0.8, // Maximum height
-      builder: (BuildContext context, ScrollController scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Live Chat",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 10),
-                Expanded(
-                  child: ListView(
-                    controller: scrollController,
-                    children: [
-                      Container(
-                        color: Colors.grey[200],
-                        child: Center(
-                          child: Text(
-                            "Chat content goes here",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      TextField(
-                        decoration: InputDecoration(
-                          hintText: "Type a message",
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                        ),
-                        maxLines: 2,
-                      ),
-                      SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Handle send message action
-                        },
-                        child: Text("Send"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange, // Match the theme color
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

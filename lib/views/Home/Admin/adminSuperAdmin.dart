@@ -24,7 +24,7 @@ class _AdminSuperAdminScreenState extends State<AdminSuperAdminScreen> {
 
   Future<void> _fetchLandlords() async {
     try {
-      final landlords = await _adminService.fetchLandlords();
+      final landlords = await _adminService.fetchAdmins();
       setState(() {
         _admin = landlords;
         _isLoading = false;

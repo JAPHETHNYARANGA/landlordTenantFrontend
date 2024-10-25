@@ -6,7 +6,7 @@ class AdminService {
 
   AdminService(this.baseUrl);
 
-  Future<List<Admin>> fetchLandlords() async {
+  Future<List<Admin>> fetchAdmins() async {
     final response = await http.get(Uri.parse('$baseUrl/admins'));
 
     if (response.statusCode == 200) {

@@ -10,7 +10,7 @@ class AdminAccountScreen extends StatefulWidget {
 }
 
 class _AdminAccountScreenState extends State<AdminAccountScreen> {
-  int _selectedIndex = 0; // Track the selected index for the bottom navigation
+  int _selectedIndex = 3; // Track the selected index for the bottom navigation
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _user; // Variable to hold user information
   bool _isLoading = true; // Track loading state
@@ -71,9 +71,9 @@ class _AdminAccountScreenState extends State<AdminAccountScreen> {
                 children: [
                   _buildProfileTile('Name', _user!['name'] ?? 'N/A'),
                   _buildProfileTile('Email', _user!['email'] ?? 'N/A'),
-                  _buildProfileTile('Phone Number', _user!['phone_number'] ?? 'N/A'),
-                  _buildProfileTile('Address', _user!['address'] ?? 'N/A'),
-                  _buildProfileTile('Role', _user!['user_type'] ?? 'N/A'),
+                  // _buildProfileTile('Phone Number', _user!['phone_number'] ?? 'N/A'),
+                  // _buildProfileTile('Address', _user!['address'] ?? 'N/A'),
+                  // _buildProfileTile('Role', _user!['user_type'] ?? 'N/A'),
                 ],
               )
                   : Text('No user data available'), // Message when no data

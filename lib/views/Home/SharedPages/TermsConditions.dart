@@ -7,7 +7,7 @@ class TermsConditionsPage extends StatefulWidget {
 }
 
 class _TermsConditionsPageState extends State<TermsConditionsPage> {
-  int _selectedIndex = 0; // Initialize the selected index
+  int _selectedIndex = 2; // Initialize the selected index
 
   void _onItemTapped(int index) {
     setState(() {

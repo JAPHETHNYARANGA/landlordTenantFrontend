@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../Services/maintenance_service.dart';
-import '../../../Services/authService.dart'; // Import AuthService
+import '../../../Services/authService.dart';
 import '../../../utils/urlContants.dart';
 import '../../../widgets/bottomNavigationBar.dart';
 import 'dart:io';
@@ -15,7 +15,7 @@ class TenantTicketScreen extends StatefulWidget {
 
 class _TenantTicketScreenState extends State<TenantTicketScreen> {
   final MaintenanceService _maintenanceService = MaintenanceService(base_url);
-  final AuthService _authService = AuthService(); // Initialize AuthService
+  final AuthService _authService = AuthService();
   List<MaintenanceTicket> tickets = [];
   int _selectedIndex = 0;
 
@@ -23,13 +23,14 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   int? tenantId;
   int? propertyId;
-  File? _image; // Variable to hold the selected image
+  File? _image;
+  bool _isLoading = false; // Track loading state
 
   @override
   void initState() {
     super.initState();
-    _fetchUser(); // Fetch user info on init
-    _fetchTickets(); // Fetch tickets on init
+    _fetchUser();
+    _fetchTickets();
   }
 
   Future<void> _fetchUser() async {
@@ -39,7 +40,6 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
         tenantId = userInfo['user']['id'];
         propertyId = userInfo['user']['property_id'];
       });
-      print('Fetched user info: Tenant ID - $tenantId, Property ID - $propertyId');
     } catch (error) {
       print('Error fetching user info: $error');
     }
@@ -51,7 +51,6 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
       setState(() {
         tickets = fetchedTickets;
       });
-      print('Successfully fetched tickets: ${tickets.length} tickets retrieved.');
     } catch (error) {
       print('Error fetching tickets: $error');
     }
@@ -64,23 +63,31 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
   }
 
   Future<void> _pickImage() async {
+    setState(() {
+      _isLoading = true; // Start loading
+    });
+
     final ImagePicker _picker = ImagePicker();
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery); // Use pickImage
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
       });
     }
+
+    setState(() {
+      _isLoading = false; // Stop loading
+    });
   }
 
   void _raiseTicket() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // This allows the bottom sheet to adjust its height based on the keyboard
+      isScrollControlled: true,
       builder: (BuildContext context) {
         return Padding(
-          padding: MediaQuery.of(context).viewInsets, // Adds padding to avoid keyboard overlap
+          padding: MediaQuery.of(context).viewInsets,
           child: Container(
             padding: const EdgeInsets.all(20),
             child: SingleChildScrollView(
@@ -105,14 +112,28 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
                     child: const Text('Upload Image'),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                   ),
-                  if (_image != null) // Display the selected image
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Image.file(
-                        _image!,
-                        height: 100,
+                  const SizedBox(height: 10),
+                  if (_isLoading)
+                    Center(child: CircularProgressIndicator())
+                  else if (_image != null) ...[
+                    const Text('Image Preview:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: Image.file(
+                          _image!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
+                  ],
                   const SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () async {
@@ -123,7 +144,7 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
                             propertyId!,
                             _issueController.text,
                             _descriptionController.text,
-                            _image, // Ensure this is defined to accept the image
+                            _image,
                           );
                           Navigator.pop(context); // Close the modal
                           await _fetchTickets(); // Refresh tickets after submission
@@ -147,45 +168,55 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
   }
 
   Widget _ticketItem(MaintenanceTicket ticket) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Ticket ID", style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text('#${ticket.id}', style: const TextStyle(fontSize: 16)),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Issue", style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(ticket.issue, style: const TextStyle(fontSize: 16)),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Status", style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Chip(
-                      label: Text(ticket.status),
-                      backgroundColor: ticket.status.toLowerCase() == 'closed' ? Colors.green : Colors.red,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TicketDetailScreen(ticket: ticket, onDelete: _fetchTickets),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Ticket ID", style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('#${ticket.id}', style: const TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Issue", style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(ticket.issue, style: const TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Status", style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Chip(
+                        label: Text(ticket.status),
+                        backgroundColor: ticket.status.toLowerCase() == 'closed' ? Colors.green : Colors.red,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -214,7 +245,14 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
             ],
           ),
           Expanded(
-            child: ListView.builder(
+            child: tickets.isEmpty
+                ? Center(
+              child: Text(
+                'No tickets available here.',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
+              ),
+            )
+                : ListView.builder(
               itemCount: tickets.length,
               itemBuilder: (context, index) {
                 return _ticketItem(tickets[index]);
@@ -226,6 +264,72 @@ class _TenantTicketScreenState extends State<TenantTicketScreen> {
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
+      ),
+    );
+  }
+}
+
+// Ticket Detail Screen
+class TicketDetailScreen extends StatelessWidget {
+  final MaintenanceTicket ticket;
+  final Function onDelete;
+
+  const TicketDetailScreen({Key? key, required this.ticket, required this.onDelete}) : super(key: key);
+
+  Future<void> _deleteTicket(BuildContext context) async {
+    final MaintenanceService _maintenanceService = MaintenanceService(base_url);
+    try {
+      await _maintenanceService.deleteTicket(ticket.id);
+      Navigator.pop(context);
+      onDelete();
+    } catch (error) {
+      print('Error deleting ticket: $error');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ticket Details'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Ticket ID: #${ticket.id}", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 16),
+            Text("Issue: ${ticket.issue}", style: TextStyle(fontSize: 18)),
+            SizedBox(height: 8),
+            Text("Description: ${ticket.description}", style: TextStyle(fontSize: 16)),
+            SizedBox(height: 8),
+            Text("Status: ${ticket.status}", style: TextStyle(fontSize: 16)),
+            SizedBox(height: 16),
+            Text("Created At: ${ticket.createdAt.toLocal().toString().split(' ')[0]}", style: TextStyle(fontSize: 14)),
+            SizedBox(height: 8),
+            Text("Updated At: ${ticket.updatedAt.toLocal().toString().split(' ')[0]}", style: TextStyle(fontSize: 14)),
+            SizedBox(height: 20),
+
+            // Display the image if it exists
+            if (ticket.imageUrl != null && ticket.imageUrl!.isNotEmpty) ...[
+              const Text('Image:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              Image.network(
+                ticket.imageUrl!,
+                height: 200,
+                fit: BoxFit.cover,
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            ElevatedButton(
+              onPressed: () => _deleteTicket(context),
+              child: const Text('Delete Ticket', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            ),
+          ],
+        ),
       ),
     );
   }

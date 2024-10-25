@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-
-import '../../../widgets/bottomNavigationBar.dart';
+import 'package:landlord_tenant/widgets/bottomNavigationBar.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../Services/adminService.dart';
+import '../../../sharedPreferences/adminSharedPreference.dart';
+import '../../../utils/urlContants.dart';
 import 'landlordEmergency.dart';
 import 'landlordMaintenance.dart';
 import 'landlordPayments.dart';
 import 'landlordProperties.dart';
 import 'landlordTenant.dart';
-// import 'adminEmergency.dart';
-// import 'adminMaintenance.dart';
-// import 'adminPayments.dart';
-// import 'adminProperties.dart';
-// import 'adminTenant.dart';
 
 class LandlordHome extends StatefulWidget {
   const LandlordHome({Key? key}) : super(key: key);
@@ -22,6 +20,116 @@ class LandlordHome extends StatefulWidget {
 class _LandlordHomeState extends State<LandlordHome> {
   int _selectedIndex = 0;
   String _userName = "Landlord";
+  List<Admin> _admins = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAdmins(); // Fetch admin data when the widget initializes
+    _fetchUserName();
+  }
+
+  Future<void> _fetchUserName() async {
+    // Fetch landlord name from SharedPreferences
+    String? name = await SharedPreferencesManager.getString('userName');
+    setState(() {
+      _userName = name ?? "Landlord"; // Use default if name is null
+    });
+  }
+
+  Future<void> _fetchAdmins() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final adminService = AdminService(base_url); // Replace with your actual base URL
+    try {
+      final admins = await adminService.fetchAdmins();
+      setState(() {
+        _admins = admins;
+      });
+    } catch (e) {
+      print('Failed to fetch admins: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  String formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber.startsWith('0')) {
+      return '254${phoneNumber.substring(1)}'; // Change '0' to '254'
+    }
+    return phoneNumber;
+  }
+
+  void _launchWhatsApp(String phoneNumber) async {
+    final formattedNumber = formatPhoneNumber(phoneNumber);
+    final message = Uri.encodeComponent("Hello, this is $_userName, an admin from City Realty, here to assist you.");
+    final url = Uri.parse("https://wa.me/$formattedNumber?text=$message");
+
+    if (await canLaunch(url.toString())) {
+      await launch(url.toString());
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _showContactModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Contact Admins',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Divider(),
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : Expanded(
+                child: ListView.builder(
+                  itemCount: _admins.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          child: Icon(Icons.person),
+                          backgroundColor: Colors.orangeAccent,
+                        ),
+                        title: Text(
+                          _admins[index].name,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(_admins[index].phoneNumber),
+                        trailing: Icon(Icons.chat, color: Colors.green),
+                        onTap: () {
+                          _launchWhatsApp(_admins[index].phoneNumber);
+                          Navigator.of(context).pop(); // Close the modal
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -61,7 +169,7 @@ class _LandlordHomeState extends State<LandlordHome> {
                             ),
                           ),
                           Text(
-                            "LIVE RIGHT",
+                            "MODISH LIVING KE",
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -138,9 +246,7 @@ class _LandlordHomeState extends State<LandlordHome> {
         onItemTapped: _onItemTapped,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Implement live chat functionality
-        },
+        onPressed: _showContactModal, // Show contact modal on button press
         backgroundColor: Colors.orangeAccent,
         child: const Icon(Icons.chat),
       ),

@@ -11,7 +11,12 @@ class MaintenanceService {
   MaintenanceService(this.baseUrl);
 
   Future<List<MaintenanceTicket>> fetchMaintenanceTickets() async {
-    final response = await http.get(Uri.parse('$baseUrl/maintenance-tickets'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/maintenance-tickets'),
+      headers: {
+    'Authorization': 'Bearer $token', // Include the token in the headers
+    'Content-Type': 'application/json', // Optionally set the content type
+    },);
 
     if (response.statusCode == 200) {
       List<dynamic> jsonResponse = json.decode(response.body);
@@ -74,23 +79,6 @@ class MaintenanceService {
 
 
 
-  // Future<void> createTicket(int tenantId, int propertyId, String issue, String description, File? image,) async {
-  //   final response = await http.post(
-  //     Uri.parse('$baseUrl/maintenance-tickets'),
-  //     headers: {'Content-Type': 'application/json'},
-  //     body: json.encode({
-  //       'tenant_id': tenantId,
-  //       'property_id': propertyId,
-  //       'issue': issue,
-  //       'description': description,
-  //     }),
-  //   );
-  //
-  //   if (response.statusCode != 201) {
-  //     throw Exception('Failed to create maintenance ticket');
-  //   }
-  // }
-
   Future<void> createTicket(
       int tenantId,
       int propertyId,
@@ -104,6 +92,7 @@ class MaintenanceService {
     );
 
     request.headers['Content-Type'] = 'application/json';
+    request.headers['Authorization'] = 'Bearer $token';
     request.fields['tenant_id'] = tenantId.toString();
     request.fields['property_id'] = propertyId.toString();
     request.fields['issue'] = issue;
@@ -124,6 +113,20 @@ class MaintenanceService {
     }
   }
 
+  Future<void> deleteTicket(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/maintenance-tickets/$id'),
+      headers: {
+        'Authorization': 'Bearer $token', // Include the bearer token
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete maintenance ticket: ${response.statusCode}');
+    }
+  }
+
 }
 
 
@@ -134,6 +137,7 @@ class MaintenanceTicket {
   final String issue;
   final String description;
   final String status;
+  final String? imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -144,6 +148,7 @@ class MaintenanceTicket {
     required this.issue,
     required this.description,
     required this.status,
+    this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -156,6 +161,7 @@ class MaintenanceTicket {
       issue: json['issue'],
       description: json['description'],
       status: json['status'],
+      imageUrl: json['image_url'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );

@@ -11,7 +11,7 @@ class LandlordAccountScreen extends StatefulWidget {
 }
 
 class _LandlordAccountScreenState extends State<LandlordAccountScreen> {
-  int _selectedIndex = 0; // Track the selected index for the bottom navigation
+  int _selectedIndex = 3; // Track the selected index for the bottom navigation
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _userData; // Variable to hold user data
   bool _isLoading = true; // Variable to show loading state

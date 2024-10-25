@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:landlord_tenant/utils/urlContants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../Services/adminService.dart';
 import '../../../widgets/MessageFloatingIcon.dart';
 import '../../../widgets/bottomNavigationBar.dart';
 import 'TenantReceipt.dart';
 import 'TenantToken.dart';
+import 'FinancialStatementsScreen.dart'; // Import the new screen
 
 class TenantHome extends StatefulWidget {
   @override
@@ -12,25 +16,162 @@ class TenantHome extends StatefulWidget {
 
 class _TenantHomeState extends State<TenantHome> {
   int _selectedIndex = 0;
-  String _userName = ''; // Variable to store the user's name
+  String _userName = '';
+  List<Admin> _admins = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUserName(); // Load the user name when the widget is initialized
+    _loadUserName();
+    _fetchAdmins();
   }
 
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userName = prefs.getString('userName') ?? 'User'; // Default to 'User' if name is not found
+      _userName = prefs.getString('userName') ?? 'User';
     });
+  }
+
+  Future<void> _fetchAdmins() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final adminService = AdminService(base_url);
+    try {
+      final admins = await adminService.fetchAdmins();
+      setState(() {
+        _admins = admins;
+      });
+    } catch (e) {
+      print('Failed to fetch admins: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  String formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber.startsWith('0')) {
+      return '254${phoneNumber.substring(1)}';
+    }
+    return phoneNumber;
+  }
+
+  void _launchWhatsApp(String phoneNumber) async {
+    final formattedNumber = formatPhoneNumber(phoneNumber);
+    final message = Uri.encodeComponent("Hello, I need assistance.");
+    final url = Uri.parse("https://wa.me/$formattedNumber?text=$message");
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _showContactModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Contact Admins',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Divider(),
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : Expanded(
+                child: ListView.builder(
+                  itemCount: _admins.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          child: Icon(Icons.person),
+                          backgroundColor: Colors.orangeAccent,
+                        ),
+                        title: Text(
+                          _admins[index].name,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(_admins[index].phoneNumber),
+                        trailing: Icon(Icons.chat, color: Colors.green),
+                        onTap: () {
+                          _launchWhatsApp(_admins[index].phoneNumber);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPaymentMethodModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Choose Payment Method',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Icon(Icons.monetization_on, color: Colors.green),
+                title: Text('M-Pesa'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Handle M-Pesa payment
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.credit_card, color: Colors.blue),
+                title: Text('Visa'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Handle Visa payment
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -52,7 +193,7 @@ class _TenantHomeState extends State<TenantHome> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Welcome back, $_userName 👋', // Use the loaded user name here
+                    'Welcome back, $_userName 👋',
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -61,13 +202,13 @@ class _TenantHomeState extends State<TenantHome> {
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const Text(
-                    'KSH 999,999.999',
+                    'KSH 0.00',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      // Add funds action
+                      _showPaymentMethodModal();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orangeAccent,
@@ -76,21 +217,29 @@ class _TenantHomeState extends State<TenantHome> {
                     child: const Text('Add funds'),
                   ),
                   const SizedBox(height: 20),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.0),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        const Text(
                           'Payment statements',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
-                        Text(
-                          'SEE ALL',
-                          style: TextStyle(
-                            color: Colors.orangeAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => FinancialStatementsScreen()),
+                            );
+                          },
+                          child: Text(
+                            'SEE ALL',
+                            style: TextStyle(
+                              color: Colors.orangeAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ],
@@ -129,14 +278,21 @@ class _TenantHomeState extends State<TenantHome> {
                       MaterialPageRoute(builder: (context) => const TenantTicketScreen()),
                     );
                   }),
-                  _buildGridItem(Icons.house, "Pay Rent"),
+                  _buildGridItem(Icons.house, "Pay Rent", onTap: () {
+                    _showPaymentMethodModal();
+                  }),
                   _buildGridItem(Icons.shopping_cart, "Buy Tokens", onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => TenantTokensScreen()),
                     );
                   }),
-                  _buildGridItem(Icons.money, "Earn"),
+                  _buildGridItem(Icons.money, "Financial Statements", onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => FinancialStatementsScreen()),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -148,9 +304,7 @@ class _TenantHomeState extends State<TenantHome> {
         onItemTapped: _onItemTapped,
       ),
       floatingActionButton: ChatFloatingActionButton(
-        onPressed: () {
-          // Implement the chat functionality for tenants here
-        },
+        onPressed: _showContactModal,
       ),
     );
   }
@@ -159,9 +313,7 @@ class _TenantHomeState extends State<TenantHome> {
     return Card(
       elevation: 2,
       child: InkWell(
-        onTap: onTap ?? () {
-          // Default functionality or no-operation if not specified
-        },
+        onTap: onTap ?? () {},
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -170,6 +322,7 @@ class _TenantHomeState extends State<TenantHome> {
             Text(
               label,
               style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center, // Center the text
             ),
           ],
         ),

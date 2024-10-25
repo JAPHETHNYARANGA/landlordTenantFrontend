@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import '../../../Services/authService.dart';
 import '../../../widgets/bottomNavigationBar.dart';
 import '../../Login/loginScreen.dart';
@@ -10,43 +11,37 @@ class TenantAccountScreen extends StatefulWidget {
 }
 
 class _TenantAccountScreenState extends State<TenantAccountScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 3;
   final AuthService _authService = AuthService();
-  Map<String, dynamic>? _user; // Variable to hold user information
-  bool _isLoading = true; // Loading state
+  Map<String, dynamic>? _user;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchUser(); // Fetch user info when the screen is initialized
+    _fetchUser();
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    // Handle navigation logic here if necessary
   }
 
   Future<void> _fetchUser() async {
     try {
-      final response = await _authService.fetchUser(); // Fetch user data from AuthService
-
-      // Log the response for debugging
-      print('Response from fetchUser: $response');
-
+      final response = await _authService.fetchUser();
       if (response['success']) {
         setState(() {
-          _user = response['user']; // Access the user data
-          _isLoading = false; // Stop loading
+          _user = response['user'];
+          _isLoading = false;
         });
       } else {
         throw Exception('Failed to fetch user data');
       }
     } catch (e) {
-      // Handle error (e.g., show a message to the user)
       setState(() {
-        _isLoading = false; // Stop loading
+        _isLoading = false;
       });
       _showSnackbar('Error fetching user data: $e');
     }
@@ -54,7 +49,6 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
 
   void _logout(BuildContext context) async {
     await _authService.logout();
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
@@ -75,6 +69,19 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
         duration: Duration(seconds: 3),
       ),
     );
+  }
+
+  Future<void> _initiateCall() async {
+    const phoneNumber = 'YOUR_PHONE_NUMBER'; // Replace with actual emergency number
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (await canLaunch(launchUri.toString())) {
+      await launch(launchUri.toString());
+    } else {
+      _showSnackbar('Could not launch phone call');
+    }
   }
 
   @override
@@ -147,19 +154,29 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
                 _buildDetailCard('Lease Start Date', _user?['lease_start_date'] ?? 'N/A'),
                 _buildDetailCard('Lease End Date', _user?['lease_end_date'] ?? 'N/A'),
               ],
+
               SizedBox(height: 24),
 
-              // Action Buttons
+              // SOS Button
               Center(
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Handle Edit Account Logic
-                  },
+                  onPressed: _initiateCall,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: Colors.red, // Color for the SOS button
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30), // Rounded corners
+                    ),
+                    elevation: 5,
                   ),
-                  child: Text('Edit Account', style: TextStyle(color: Colors.white)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.phone, color: Colors.white), // Phone icon
+                      SizedBox(width: 8),
+                      Text('SOS', style: TextStyle(color: Colors.white, fontSize: 18)),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(height: 24),
@@ -169,7 +186,7 @@ class _TenantAccountScreenState extends State<TenantAccountScreen> {
                 child: ElevatedButton(
                   onPressed: _handleLogout,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red, // Logout button color
+                    backgroundColor: Colors.red,
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                   ),
                   child: Text('Logout', style: TextStyle(color: Colors.white)),
